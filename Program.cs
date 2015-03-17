@@ -61,6 +61,17 @@ namespace Earlz.Inceptor
                     m.Body.Instructions.Insert(0, (Instruction.Create(OpCodes.Call, m.Module.Import(inceptor))));
                     var name = MethodName(t, m);
                     sb.AppendLine(name);
+                    if(m.HasParameters)
+                    {
+                        for(int i=0;i<m.Parameters.Count;i++)
+                        {
+                            m.Body.Instructions.Insert(0, Instruction.Create(OpCodes.Ldarg, i));
+                        }
+                    }
+                    else
+                    {
+                        m.Body.Instructions.Insert(0, (Instruction.Create(OpCodes.Ldnull)));
+                    }
                     m.Body.Instructions.Insert(0, (Instruction.Create(OpCodes.Ldstr, name)));
                     if (m.IsStatic)
                     {

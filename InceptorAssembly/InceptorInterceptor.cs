@@ -18,24 +18,30 @@ namespace Earlz.InceptorAssembly
         static string locked = "";
         public static object Check(object targetThis, string name) //, params object[] values)
         {
-           // lock(locked)
+            // lock(locked)
             {
-                if(Interceptors.ContainsKey(name))
+                if (Interceptors.ContainsKey(name))
                 {
                     return Interceptors[name](targetThis, name);
                 }
             }
             return null;
         }
-        public static void bleh()
+        public static object[] bleh(ref int foo, params object[] p)
         {
+            foo = 20;
             var tmp = Check(null, "foo");
-            if(tmp != null)
+            if (tmp != null)
             {
-                return;
+                return p;
             }
             Console.WriteLine("meh");
-            return;
+            return p;
+        }
+        public static void meh()
+        {
+            int tmp = 0;
+            bleh(ref tmp, 10, 15, 50, 20);
         }
     }
 }
