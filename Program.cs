@@ -2,6 +2,7 @@
 using Mono.Cecil.Cil;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,9 +13,9 @@ namespace Earlz.Inceptor
     {
         static void Main(string[] args)
         {
-            if(args.Count() != 3)
+            if(args.Count() != 4)
             {
-                Console.WriteLine("usage: target.dll inceptor.dll saveto.dll");
+                Console.WriteLine("usage: target.dll inceptor.dll saveto.dll methodnames.txt");
             }
             var targetModule = ModuleDefinition.ReadModule(args[0]);
             var inceptorModule = ModuleDefinition.ReadModule(args[1]);
@@ -22,7 +23,7 @@ namespace Earlz.Inceptor
             var inceptorType = inceptorModule.Types.First(x => x.FullName == "Earlz.InceptorAssembly.InceptorInterceptor");
             var inceptor = inceptorType.Methods.First(x => x.Name == "Check");
 
-            
+            StringBuilder sb = new StringBuilder();
             foreach(var t in targetModule.Types)
             {
                 foreach(var m in t.Methods)
@@ -58,7 +59,9 @@ namespace Earlz.Inceptor
                         m.Body.Instructions.Insert(0, Instruction.Create(OpCodes.Castclass, m.ReturnType));
                     }
                     m.Body.Instructions.Insert(0, (Instruction.Create(OpCodes.Call, m.Module.Import(inceptor))));
-                    m.Body.Instructions.Insert(0, (Instruction.Create(OpCodes.Ldstr, t.FullName+"::"+m.Name)));
+                    var name = MethodName(t, m);
+                    sb.AppendLine(name);
+                    m.Body.Instructions.Insert(0, (Instruction.Create(OpCodes.Ldstr, name)));
                     if (m.IsStatic)
                     {
                         m.Body.Instructions.Insert(0, (Instruction.Create(OpCodes.Ldnull)));
@@ -71,6 +74,24 @@ namespace Earlz.Inceptor
             }
 
             targetModule.Write(args[2]);
+            File.WriteAllText(args[3], sb.ToString());
+        }
+        static string MethodName(TypeDefinition t, MethodDefinition m)
+        {
+            return m.FullName;
+            /*
+            string s = m.ReturnType.FullName + " " + t.FullName + "::" + m.FullName + "(";
+            if (m.HasParameters)
+            {
+                foreach (var p in m.Parameters)
+                {
+                    s += p.ParameterType.FullName + ", ";
+                }
+                s=s.Substring(0, s.Length - 2);
+            }
+            s += ")";
+            return s;
+          * */
         }
     }
 }
