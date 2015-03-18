@@ -34,7 +34,11 @@ namespace Earlz.Inceptor
                     if (!m.HasBody) continue;
                     if (t.IsValueType) continue; //don't try to handle structs yet
                     if (m.Name == ".ctor" || m.Name == "..ctor") continue;
-                    if (m.ReturnType.IsValueType) continue;
+                    if(m.ReturnType.IsGenericInstance)
+                    {
+
+                    }
+                    if (m.ReturnType.IsValueType || m.ReturnType.HasGenericParameters || m.ReturnType.IsGenericInstance || m.ReturnType.IsGenericParameter) continue; //ugh don't handle boxing shit yet
                     //if (m.ReturnType.FullName != "System.Void") continue;
                     var first = m.Body.Instructions[0];
                     var inject=new List<Instruction>();

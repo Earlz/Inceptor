@@ -33,10 +33,10 @@ namespace Earlz.InceptorAssembly
             arr[0]=foo;
             arr[1]=10;
             foo = 20;
-            var tmp = Check(null, "foo", null);
+            var tmp = (object[])Check(null, "foo", null);
             if (tmp != null)
             {
-                return p;
+                return tmp;
             }
             Console.WriteLine("meh");
             return p;
