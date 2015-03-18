@@ -33,14 +33,46 @@ namespace Earlz.Inceptor
                    // il.
                     if (!m.HasBody) continue;
                     if (t.IsValueType) continue; //don't try to handle structs yet
-                    int after=10;
+                    if (m.Name == ".ctor" || m.Name == "..ctor") continue;
+                    if (m.ReturnType.IsValueType) continue;
+                    //if (m.ReturnType.FullName != "System.Void") continue;
                     var first = m.Body.Instructions[0];
+                    var inject=new List<Instruction>();
+                    if (m.IsStatic)
+                    {
+                       inject.Add( (Instruction.Create(OpCodes.Ldnull)));
+                    }
+                    else
+                    {
+                       inject.Add( (Instruction.Create(OpCodes.Ldarg_0)));
+                    }
+                    var name = MethodName(t, m);
+                    sb.AppendLine(name);
+                   inject.Add( (Instruction.Create(OpCodes.Ldstr, name)));
+                    if(m.HasParameters)
+                    {
+                      //  m.Body.InitLocals = true;
+                       // var paramsarr = new VariableDefinition(targetModule.TypeSystem.Object.Resolve());
+                      //  m.Body.Variables.Add(paramsarr);
+
+                        for(int i=0;i<m.Parameters.Count;i++)
+                        {
+                        //   inject.Add( Instruction.Create(OpCodes.Ldarg, i));
+                        }
+                        inject.Add(Instruction.Create(OpCodes.Ldnull));
+                    }
+                    else
+                    {
+                       inject.Add( (Instruction.Create(OpCodes.Ldnull)));
+                    }
+
+                   inject.Add( (Instruction.Create(OpCodes.Call, m.Module.Import(inceptor))));
                     if (m.ReturnType.FullName == "System.Void")
                     {
-                        m.Body.Instructions.Insert(0, Instruction.Create(OpCodes.Ret));
-                        m.Body.Instructions.Insert(0, Instruction.Create(OpCodes.Brtrue_S, first));
-                        m.Body.Instructions.Insert(0, Instruction.Create(OpCodes.Ceq));
-                        m.Body.Instructions.Insert(0, Instruction.Create(OpCodes.Ldnull));
+                       inject.Add( Instruction.Create(OpCodes.Ldnull));
+                       inject.Add( Instruction.Create(OpCodes.Ceq));
+                       inject.Add( Instruction.Create(OpCodes.Brtrue_S, first));
+                       inject.Add( Instruction.Create(OpCodes.Ret));
                     }
                     else
                     {
@@ -48,38 +80,21 @@ namespace Earlz.Inceptor
                         //int local = m.Body.Variables.Count();
                         var local = new VariableDefinition(m.ReturnType);
                         m.Body.Variables.Add(local);
-                        
-                        m.Body.Instructions.Insert(0, Instruction.Create(OpCodes.Ret));
-                        m.Body.Instructions.Insert(0, Instruction.Create(OpCodes.Ldloc, local));
-                        m.Body.Instructions.Insert(0, Instruction.Create(OpCodes.Brtrue_S, first));
-                        m.Body.Instructions.Insert(0, Instruction.Create(OpCodes.Ceq));
-                        m.Body.Instructions.Insert(0, Instruction.Create(OpCodes.Ldnull));
-                        m.Body.Instructions.Insert(0, Instruction.Create(OpCodes.Ldloc, local));
-                        m.Body.Instructions.Insert(0, Instruction.Create(OpCodes.Stloc, local));
-                        m.Body.Instructions.Insert(0, Instruction.Create(OpCodes.Castclass, m.ReturnType));
+                        inject.Add( Instruction.Create(OpCodes.Castclass, m.ReturnType));
+                       // inject.Add(Instruction.Create(OpCodes.Unbox_Any, m.ReturnType));
+                        inject.Add( Instruction.Create(OpCodes.Stloc, local));
+                        inject.Add(Instruction.Create(OpCodes.Ldloc, local));
+                      //  inject.Add(Instruction.Create(OpCodes.Box, m.ReturnType));
+                        inject.Add( Instruction.Create(OpCodes.Ldnull));
+                        inject.Add( Instruction.Create(OpCodes.Ceq));
+                        inject.Add( Instruction.Create(OpCodes.Brtrue_S, first));
+                        inject.Add( Instruction.Create(OpCodes.Ldloc, local));
+                        inject.Add( Instruction.Create(OpCodes.Ret));
                     }
-                    m.Body.Instructions.Insert(0, (Instruction.Create(OpCodes.Call, m.Module.Import(inceptor))));
-                    var name = MethodName(t, m);
-                    sb.AppendLine(name);
-                    if(m.HasParameters)
+                    inject.Reverse(); //this is mutable, btw
+                    foreach(var instr in inject)
                     {
-                        for(int i=0;i<m.Parameters.Count;i++)
-                        {
-                            m.Body.Instructions.Insert(0, Instruction.Create(OpCodes.Ldarg, i));
-                        }
-                    }
-                    else
-                    {
-                        m.Body.Instructions.Insert(0, (Instruction.Create(OpCodes.Ldnull)));
-                    }
-                    m.Body.Instructions.Insert(0, (Instruction.Create(OpCodes.Ldstr, name)));
-                    if (m.IsStatic)
-                    {
-                        m.Body.Instructions.Insert(0, (Instruction.Create(OpCodes.Ldnull)));
-                    }
-                    else
-                    {
-                        m.Body.Instructions.Insert(0, (Instruction.Create(OpCodes.Ldarg_0)));
+                        m.Body.Instructions.Insert(0, instr);
                     }
                 }
             }
