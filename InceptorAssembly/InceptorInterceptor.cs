@@ -55,15 +55,16 @@ namespace Earlz.InceptorAssembly
             public int biz;
             public int baz;
         }
-        public static void testit(ref FooStruct test, ref string meh)
+        public static void testit(ref FooStruct test, ref string me, ref bool ugh)
         {
             int foo=10;
             string blah="";
             var store=new object[10];
            // store[0] = test;
             store[0]=Coerce(test);
-            store[0]=Coerce(meh);
+            //store[0]=Coerce(meh);
             store[0]=Coerce(blah);
+            ugh = (bool)store[0];
         }
     }
 }

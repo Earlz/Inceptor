@@ -23,6 +23,7 @@ namespace Earlz.Inceptor
             var inceptorType = inceptorModule.Types.First(x => x.FullName == "Earlz.InceptorAssembly.InceptorInterceptor");
             var inceptor = inceptorType.Methods.First(x => x.Name == "Check");
 
+
             StringBuilder sb = new StringBuilder();
             foreach(var t in targetModule.Types)
             {
@@ -38,6 +39,7 @@ namespace Earlz.Inceptor
                     {
 
                     }
+                    var reloadParams = new List<Instruction>();
                     if (m.ReturnType.IsValueType || m.ReturnType.HasGenericParameters || m.ReturnType.IsGenericInstance || m.ReturnType.IsGenericParameter) continue; //ugh don't handle boxing shit yet
                     var first = m.Body.Instructions[0];
                     var inject=new List<Instruction>();
@@ -55,10 +57,13 @@ namespace Earlz.Inceptor
                     if(m.HasParameters)
                     {
                         m.Body.InitLocals = true;
-                        var paramsarr = new VariableDefinition(m.Module.Import(targetModule.TypeSystem.Object.Resolve()));
+                        var objtype = m.Module.Import(targetModule.TypeSystem.Object.Resolve());
+                        var paramsarr = new VariableDefinition(new ArrayType(objtype));
                         m.Body.Variables.Add(paramsarr);
                         inject.Add(Instruction.Create(OpCodes.Ldc_I4, m.Parameters.Count));
-                        inject.Add(Instruction.Create(OpCodes.Newarr, paramsarr.VariableType));
+                        inject.Add(Instruction.Create(OpCodes.Newarr, objtype));
+                        inject.Add(Instruction.Create(OpCodes.Dup));
+                        inject.Add(Instruction.Create(OpCodes.Stloc, paramsarr));
                         for(int i=0;i<m.Parameters.Count;i++)
                         {
                             inject.Add(Instruction.Create(OpCodes.Dup));
@@ -74,22 +79,51 @@ namespace Earlz.Inceptor
                             }
                             else
                             {
-                                
                                 if (p.ParameterType.IsByReference)
                                 {
+
+                                    reloadParams.Add(Instruction.Create(OpCodes.Ldarg, p));
+                                    reloadParams.Add(Instruction.Create(OpCodes.Ldloc, paramsarr));
+                                    reloadParams.Add(Instruction.Create(OpCodes.Ldc_I4, i));
+
                                     inject.Add(Instruction.Create(OpCodes.Ldarg, p));
                                     inject.Add(Instruction.Create(OpCodes.Ldobj, p.ParameterType.GetElementType()));
+
                                     if (p.ParameterType.GetElementType().IsValueType)
                                     {
+                                        reloadParams.Add(Instruction.Create(OpCodes.Ldelem_Ref));
+                                        reloadParams.Add(Instruction.Create(OpCodes.Box, p.ParameterType.GetElementType()));
+                                        reloadParams.Add(Instruction.Create(OpCodes.Stind_Ref));
+
                                         inject.Add(Instruction.Create(OpCodes.Box, p.ParameterType.GetElementType()));
+                                    }
+                                    else
+                                    {
+                                        reloadParams.Add(Instruction.Create(OpCodes.Ldelem_Ref));
+                                        reloadParams.Add(Instruction.Create(OpCodes.Stind_Ref));
+                                        //reloadParams.Add(Instruction.Create(OpCodes.Starg, p));
                                     }
                                 }
                                 else
                                 {
+                                    reloadParams.Add(Instruction.Create(OpCodes.Ldloc, paramsarr));
+                                    reloadParams.Add(Instruction.Create(OpCodes.Ldc_I4, i));
+
                                     inject.Add(Instruction.Create(OpCodes.Ldarg, p));
                                     if (p.ParameterType.IsValueType)
                                     {
+                                        reloadParams.Add(Instruction.Create(OpCodes.Ldelem_Ref));
+                                        reloadParams.Add(Instruction.Create(OpCodes.Unbox, p.ParameterType));
+                                        reloadParams.Add(Instruction.Create(OpCodes.Ldobj, p.ParameterType.GetElementType()));
+                                        reloadParams.Add(Instruction.Create(OpCodes.Starg, p));
+
                                         inject.Add(Instruction.Create(OpCodes.Box, p.ParameterType));
+                                    }
+                                    else
+                                    {
+                                        reloadParams.Add(Instruction.Create(OpCodes.Ldelem_Ref));
+                                        reloadParams.Add(Instruction.Create(OpCodes.Castclass, p.ParameterType));
+                                        reloadParams.Add(Instruction.Create(OpCodes.Starg, p));
                                     }
                                 } 
                             }
@@ -105,6 +139,17 @@ namespace Earlz.Inceptor
                    inject.Add( (Instruction.Create(OpCodes.Call, m.Module.Import(inceptor))));
                     if (m.ReturnType.FullName == "System.Void")
                     {
+
+                        m.Body.InitLocals = true;
+                        var local = new VariableDefinition(m.Module.Import(targetModule.TypeSystem.Object.Resolve())); //just use object
+                        m.Body.Variables.Add(local);
+                        inject.Add( Instruction.Create(OpCodes.Stloc, local));
+
+                        foreach(var instr in reloadParams)
+                        {
+                            inject.Add(instr);
+                        }
+                        inject.Add( Instruction.Create(OpCodes.Ldloc, local));
                        inject.Add( Instruction.Create(OpCodes.Ldnull));
                        inject.Add( Instruction.Create(OpCodes.Ceq));
                        inject.Add( Instruction.Create(OpCodes.Brtrue_S, first));
@@ -117,6 +162,12 @@ namespace Earlz.Inceptor
                         m.Body.Variables.Add(local);
                         inject.Add( Instruction.Create(OpCodes.Castclass, m.ReturnType));
                         inject.Add( Instruction.Create(OpCodes.Stloc, local));
+                        
+                        foreach(var instr in reloadParams)
+                        {
+                            inject.Add(instr);
+                        }
+
                         inject.Add(Instruction.Create(OpCodes.Ldloc, local));
                         inject.Add( Instruction.Create(OpCodes.Ldnull));
                         inject.Add( Instruction.Create(OpCodes.Ceq));
