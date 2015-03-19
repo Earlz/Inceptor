@@ -50,12 +50,17 @@ namespace Earlz.InceptorAssembly
         {
             return (object)anything;
         }
-        public static void testit(ref int test, ref string meh)
+        public struct FooStruct
+        {
+            public int biz;
+            public int baz;
+        }
+        public static void testit(ref FooStruct test, ref string meh)
         {
             int foo=10;
             string blah="";
             var store=new object[10];
-            store[0]=Coerce(foo);
+           // store[0] = test;
             store[0]=Coerce(test);
             store[0]=Coerce(meh);
             store[0]=Coerce(blah);

@@ -75,21 +75,22 @@ namespace Earlz.Inceptor
                             }
                             else
                             {
-                                    inject.Add(Instruction.Create(OpCodes.Ldarg, p));
-                                    inject.Add(Instruction.Create(OpCodes.Mkrefany, p.ParameterType));
-                                    var tmppp = m.Module.Import(targetModule.TypeSystem.TypedReference.Resolve());
-                                    inject.Add(Instruction.Create(OpCodes.Box, tmppp));
-                                /*
+                                //    var tmppp = m.Module.Import(targetModule.TypeSystem.TypedReference.Resolve());
+                                 
+                                
                                 if (p.ParameterType.IsByReference)
                                 {
                                     //var x = (ByReferenceType) p.ParameterType;
                                     //don't try to handle for now
                                    // inject.Add(Instruction.Create(OpCodes.Ldnull));
                                     inject.Add(Instruction.Create(OpCodes.Ldarg, p));
+                                    inject.Add(Instruction.Create(OpCodes.Ldobj, p.ParameterType.GetElementType()));
+                                    if (p.ParameterType.GetElementType().IsValueType)
+                                    {
+                                        inject.Add(Instruction.Create(OpCodes.Box, p.ParameterType.GetElementType()));
+                                    }
                                 //    inject.Add(Instruction.Create(OpCodes.Mkrefany, p.ParameterType));
                                    // inject.Add(Instruction.Create(OpCodes.Box, p.ParameterType.GetElementType()));
-                                    inject.Add(Instruction.Create(OpCodes.Pop));
-                                    inject.Add(Instruction.Create(OpCodes.Ldc_I4_0));
                                 }
                                 else
                                 {
@@ -98,7 +99,7 @@ namespace Earlz.Inceptor
                                     {
                                         inject.Add(Instruction.Create(OpCodes.Box, p.ParameterType));
                                     }
-                                } */
+                                } 
                             }
                             inject.Add(Instruction.Create(OpCodes.Stelem_Ref));
 
