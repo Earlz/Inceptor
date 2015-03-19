@@ -39,7 +39,6 @@ namespace Earlz.Inceptor
 
                     }
                     if (m.ReturnType.IsValueType || m.ReturnType.HasGenericParameters || m.ReturnType.IsGenericInstance || m.ReturnType.IsGenericParameter) continue; //ugh don't handle boxing shit yet
-                    //if (m.ReturnType.FullName != "System.Void") continue;
                     var first = m.Body.Instructions[0];
                     var inject=new List<Instruction>();
                     if (m.IsStatic)
@@ -75,22 +74,15 @@ namespace Earlz.Inceptor
                             }
                             else
                             {
-                                //    var tmppp = m.Module.Import(targetModule.TypeSystem.TypedReference.Resolve());
-                                 
                                 
                                 if (p.ParameterType.IsByReference)
                                 {
-                                    //var x = (ByReferenceType) p.ParameterType;
-                                    //don't try to handle for now
-                                   // inject.Add(Instruction.Create(OpCodes.Ldnull));
                                     inject.Add(Instruction.Create(OpCodes.Ldarg, p));
                                     inject.Add(Instruction.Create(OpCodes.Ldobj, p.ParameterType.GetElementType()));
                                     if (p.ParameterType.GetElementType().IsValueType)
                                     {
                                         inject.Add(Instruction.Create(OpCodes.Box, p.ParameterType.GetElementType()));
                                     }
-                                //    inject.Add(Instruction.Create(OpCodes.Mkrefany, p.ParameterType));
-                                   // inject.Add(Instruction.Create(OpCodes.Box, p.ParameterType.GetElementType()));
                                 }
                                 else
                                 {
@@ -104,7 +96,6 @@ namespace Earlz.Inceptor
                             inject.Add(Instruction.Create(OpCodes.Stelem_Ref));
 
                         }
-                       // inject.Add(Instruction.Create(OpCodes.Ldnull));
                     }
                     else
                     {
@@ -122,14 +113,11 @@ namespace Earlz.Inceptor
                     else
                     {
                         m.Body.InitLocals = true;
-                        //int local = m.Body.Variables.Count();
                         var local = new VariableDefinition(m.ReturnType);
                         m.Body.Variables.Add(local);
                         inject.Add( Instruction.Create(OpCodes.Castclass, m.ReturnType));
-                       // inject.Add(Instruction.Create(OpCodes.Unbox_Any, m.ReturnType));
                         inject.Add( Instruction.Create(OpCodes.Stloc, local));
                         inject.Add(Instruction.Create(OpCodes.Ldloc, local));
-                      //  inject.Add(Instruction.Create(OpCodes.Box, m.ReturnType));
                         inject.Add( Instruction.Create(OpCodes.Ldnull));
                         inject.Add( Instruction.Create(OpCodes.Ceq));
                         inject.Add( Instruction.Create(OpCodes.Brtrue_S, first));
