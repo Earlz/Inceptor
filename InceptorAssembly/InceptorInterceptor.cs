@@ -46,5 +46,19 @@ namespace Earlz.InceptorAssembly
             int tmp = 0;
             bleh(ref tmp, 10, 15, 50, 20);
         }
+        public static object Coerce<T>(T anything)
+        {
+            return (object)anything;
+        }
+        public static void testit(ref int test, ref string meh)
+        {
+            int foo=10;
+            string blah="";
+            var store=new object[10];
+            store[0]=Coerce(foo);
+            store[0]=Coerce(test);
+            store[0]=Coerce(meh);
+            store[0]=Coerce(blah);
+        }
     }
 }

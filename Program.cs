@@ -55,15 +55,55 @@ namespace Earlz.Inceptor
                    inject.Add( (Instruction.Create(OpCodes.Ldstr, name)));
                     if(m.HasParameters)
                     {
-                      //  m.Body.InitLocals = true;
-                       // var paramsarr = new VariableDefinition(targetModule.TypeSystem.Object.Resolve());
-                      //  m.Body.Variables.Add(paramsarr);
-
+                        m.Body.InitLocals = true;
+                        var paramsarr = new VariableDefinition(m.Module.Import(targetModule.TypeSystem.Object.Resolve()));
+                        m.Body.Variables.Add(paramsarr);
+                        inject.Add(Instruction.Create(OpCodes.Ldc_I4, m.Parameters.Count));
+                        inject.Add(Instruction.Create(OpCodes.Newarr, paramsarr.VariableType));
                         for(int i=0;i<m.Parameters.Count;i++)
                         {
-                        //   inject.Add( Instruction.Create(OpCodes.Ldarg, i));
+                            inject.Add(Instruction.Create(OpCodes.Dup));
+                            var p=m.Parameters[i];
+                            inject.Add(Instruction.Create(OpCodes.Ldc_I4, i));
+                            if(p.ParameterType.FullName=="System.Boolean&")
+                            {
+
+                            }
+                            if (p.ParameterType.IsGenericInstance || p.ParameterType.IsGenericParameter || p.ParameterType.IsPointer)
+                            {
+                                inject.Add(Instruction.Create(OpCodes.Ldnull));
+                            }
+                            else
+                            {
+                                    inject.Add(Instruction.Create(OpCodes.Ldarg, p));
+                                    inject.Add(Instruction.Create(OpCodes.Mkrefany, p.ParameterType));
+                                    var tmppp = m.Module.Import(targetModule.TypeSystem.TypedReference.Resolve());
+                                    inject.Add(Instruction.Create(OpCodes.Box, tmppp));
+                                /*
+                                if (p.ParameterType.IsByReference)
+                                {
+                                    //var x = (ByReferenceType) p.ParameterType;
+                                    //don't try to handle for now
+                                   // inject.Add(Instruction.Create(OpCodes.Ldnull));
+                                    inject.Add(Instruction.Create(OpCodes.Ldarg, p));
+                                //    inject.Add(Instruction.Create(OpCodes.Mkrefany, p.ParameterType));
+                                   // inject.Add(Instruction.Create(OpCodes.Box, p.ParameterType.GetElementType()));
+                                    inject.Add(Instruction.Create(OpCodes.Pop));
+                                    inject.Add(Instruction.Create(OpCodes.Ldc_I4_0));
+                                }
+                                else
+                                {
+                                    inject.Add(Instruction.Create(OpCodes.Ldarg, p));
+                                    if (p.ParameterType.IsValueType)
+                                    {
+                                        inject.Add(Instruction.Create(OpCodes.Box, p.ParameterType));
+                                    }
+                                } */
+                            }
+                            inject.Add(Instruction.Create(OpCodes.Stelem_Ref));
+
                         }
-                        inject.Add(Instruction.Create(OpCodes.Ldnull));
+                       // inject.Add(Instruction.Create(OpCodes.Ldnull));
                     }
                     else
                     {
