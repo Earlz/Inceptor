@@ -91,9 +91,11 @@ namespace Earlz.Inceptor
                                     reloadParams.Add(Instruction.Create(OpCodes.Ldarg, p));
                                     reloadParams.Add(Instruction.Create(OpCodes.Ldloc, paramsarr));
                                     reloadParams.Add(Instruction.Create(OpCodes.Ldc_I4, i));
-                                        reloadParams.Add(Instruction.Create(OpCodes.Ldelema, new ByReferenceType(objtype)));
+                                        reloadParams.Add(Instruction.Create(OpCodes.Ldelem_Ref));
+                                        reloadParams.Add(Instruction.Create(OpCodes.Unbox_Any, p.ParameterType.GetElementType()));
+                                        //reloadParams.Add(Instruction.Create(OpCodes.Ldobj, objtype));
                                         //reloadParams.Add(Instruction.Create(OpCodes.Unbox, p.ParameterType.GetElementType()));
-                                        reloadParams.Add(Instruction.Create(OpCodes.Ldobj, p.ParameterType.GetElementType()));
+                                        //reloadParams.Add(Instruction.Create(OpCodes.Castclass, p.ParameterType));
                                         reloadParams.Add(Instruction.Create(OpCodes.Stobj, p.ParameterType.GetElementType()));
 
                                         inject.Add(Instruction.Create(OpCodes.Box, p.ParameterType.GetElementType()));

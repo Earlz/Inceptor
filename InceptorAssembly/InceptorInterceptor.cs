@@ -65,6 +65,7 @@ namespace Earlz.InceptorAssembly
             //store[0]=Coerce(meh);
             store[0]=Coerce(blah);
             ugh = (bool)store[0];
+            test = (FooStruct)store[1];
         }
     }
 }
