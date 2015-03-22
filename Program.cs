@@ -16,6 +16,7 @@ namespace Earlz.Inceptor
             if(args.Count() != 4)
             {
                 Console.WriteLine("usage: target.dll inceptor.dll saveto.dll methodnames.txt");
+                return;
             }
             var targetModule = ModuleDefinition.ReadModule(args[0]);
             var inceptorModule = ModuleDefinition.ReadModule(args[1]);
